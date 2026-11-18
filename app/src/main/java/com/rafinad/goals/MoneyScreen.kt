@@ -79,11 +79,14 @@ fun MoneyScreen(store: Store) {
         item {
             Section("Новая запись") {
                 Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Chip("Расход", !income, { income = false; selected = null })
-                    Chip("Доход", income, { income = true; selected = null })
+                Row(Modifier.fillMaxWidth().clip(CircleShape).background(c.surfaceVariant).padding(4.dp)) {
+                    Segment("− Расход", !income, Expense, Modifier.weight(1f)) { income = false; selected = null }
+                    Segment("+ Доход", income, Income, Modifier.weight(1f)) { income = true; selected = null }
                 }
-                Spacer(Modifier.height(12.dp))
+                Text(if (income) "Категории доходов" else "Категории расходов",
+                    style = MaterialTheme.typography.labelMedium, color = c.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 12.dp))
+                Spacer(Modifier.height(8.dp))
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     cats.filter { it.income == income }.forEach { cat ->
                         Chip("${cat.emoji} ${cat.name}", selected == cat,
@@ -180,6 +183,18 @@ private fun Chip(text: String, selected: Boolean, onClick: () -> Unit, onLongCli
         contentColor = if (selected) c.onPrimary else c.onSurface,
     ) {
         Text(text, Modifier.padding(horizontal = 14.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
+private fun Segment(text: String, selected: Boolean, color: Color, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier.clip(CircleShape).background(if (selected) color else Color.Transparent)
+            .clickable(onClick = onClick).padding(vertical = 10.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium)
     }
 }
 
