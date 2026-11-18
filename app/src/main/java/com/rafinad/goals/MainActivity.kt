@@ -3,87 +3,82 @@ package com.rafinad.goals
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.clickable
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val store = GoalStore(this)
-        setContent { MaterialTheme { GoalsScreen(store) } }
+        enableEdgeToEdge()
+        val store = Store(this)
+        setContent { AppTheme { App(store) } }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun GoalsScreen(store: GoalStore) {
-    var goals by remember { mutableStateOf(store.load()) }
-    var expanded by remember { mutableStateOf<Int?>(null) }
-    fun update(new: List<Goal>) { goals = new; store.save(new) }
+enum class Tab(val label: String, val icon: ImageVector) {
+    DAY("День", Icons.Default.Home),
+    CALENDAR("Календарь", Icons.Default.DateRange),
+    GOALS("Цели", Icons.Default.Star),
+    MONEY("Финансы", Icons.Default.ShoppingCart),
+}
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Цели и задачи") }) }) { pad ->
-        Column(Modifier.padding(pad).padding(horizontal = 16.dp)) {
-            AddRow("Новая цель") { update(goals + Goal(it)) }
-            LazyColumn {
-                itemsIndexed(goals) { i, goal ->
-                    GoalCard(
-                        goal = goal,
-                        expanded = expanded == i,
-                        onClick = { expanded = if (expanded == i) null else i },
-                        onChange = { g -> update(goals.toMutableList().also { it[i] = g }) },
-                        onDelete = { update(goals.filterIndexed { j, _ -> j != i }); expanded = null },
-                    )
+@Composable
+fun App(store: Store) {
+    var tab by rememberSaveable { mutableStateOf(Tab.DAY) }
+    var date by rememberSaveable { mutableStateOf(LocalDate.now()) }
+    var tip by rememberSaveable { mutableIntStateOf(Random.nextInt(QUOTES.size)) }
+    var showTip by rememberSaveable { mutableStateOf(true) }
+    val nextTip = { tip = (tip + 1 + Random.nextInt(QUOTES.size - 1)) % QUOTES.size }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                Tab.entries.forEach { t ->
+                    NavigationBarItem(tab == t, { tab = t }, icon = { Icon(t.icon, null) }, label = { Text(t.label) })
                 }
             }
+        },
+    ) { pad ->
+        Box(Modifier.padding(pad)) {
+            when (tab) {
+                Tab.DAY -> DayScreen(store, date, QUOTES[tip], nextTip) { date = LocalDate.now() }
+                Tab.CALENDAR -> CalendarScreen(store, date) { date = it; tab = Tab.DAY }
+                Tab.GOALS -> GoalsScreen(store)
+                Tab.MONEY -> MoneyScreen(store)
+            }
         }
     }
-}
 
-@Composable
-fun GoalCard(goal: Goal, expanded: Boolean, onClick: () -> Unit, onChange: (Goal) -> Unit, onDelete: () -> Unit) {
-    Card(Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable(onClick = onClick)) {
-        Column(Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(goal.title, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
-                Text("${goal.tasks.count { it.done }}/${goal.tasks.size}")
-                IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, "Удалить цель") }
-            }
-            LinearProgressIndicator(progress = { goal.progress }, modifier = Modifier.fillMaxWidth())
-            if (expanded) {
-                goal.tasks.forEachIndexed { j, task ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(task.done, { done ->
-                            onChange(goal.copy(tasks = goal.tasks.toMutableList().also { it[j] = task.copy(done = done) }))
-                        })
-                        Text(task.title, Modifier.weight(1f))
-                        IconButton(onClick = { onChange(goal.copy(tasks = goal.tasks.filterIndexed { k, _ -> k != j })) }) {
-                            Icon(Icons.Default.Delete, "Удалить задачу")
-                        }
-                    }
+    if (showTip) {
+        val q = QUOTES[tip]
+        AlertDialog(
+            onDismissRequest = { showTip = false },
+            confirmButton = { TextButton({ showTip = false }) { Text("Спасибо") } },
+            dismissButton = { TextButton(nextTip) { Text("Ещё совет") } },
+            title = { Text("Совет дня") },
+            text = {
+                Column {
+                    Text("«${q.text}»", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(Modifier.height(8.dp))
+                    Text("— ${q.author}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                AddRow("Новая задача") { onChange(goal.copy(tasks = goal.tasks + Task(it))) }
-            }
-        }
-    }
-}
-
-@Composable
-fun AddRow(hint: String, onAdd: (String) -> Unit) {
-    var text by remember { mutableStateOf("") }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(text, { text = it }, Modifier.weight(1f), label = { Text(hint) }, singleLine = true)
-        IconButton(onClick = { if (text.isNotBlank()) { onAdd(text.trim()); text = "" } }) {
-            Icon(Icons.Default.Add, "Добавить")
-        }
+            },
+            shape = CardShape,
+            containerColor = MaterialTheme.colorScheme.surface,
+        )
     }
 }
