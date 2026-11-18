@@ -14,6 +14,19 @@ class GoalTest {
         assertEquals(700L, balance(listOf(Money(1000, true, "", "2026-11-19"), Money(300, false, "", "2026-11-19"))))
     }
 
+    @Test fun totalsGroupByCategoryAndSortDesc() {
+        val items = listOf(
+            Money(100, false, "", "2026-11-19", "Семья", "👧"),
+            Money(500, false, "", "2026-11-19", "Работа", "💻"),
+            Money(200, false, "", "2026-11-19", "Семья", "👧"),
+            Money(9000, true, "", "2026-11-19", "Зарплата", "💼"),
+        )
+        assertEquals(
+            listOf(CategoryTotal("💻", "Работа", 500), CategoryTotal("👧", "Семья", 300)),
+            totalsByCategory(items, income = false),
+        )
+    }
+
     @Test fun listHelpers() {
         assertEquals(listOf(1, 9, 3), listOf(1, 2, 3).replace(1, 9))
         assertEquals(listOf(1, 3), listOf(1, 2, 3).without(1))

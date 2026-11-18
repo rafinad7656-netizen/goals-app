@@ -20,10 +20,35 @@ data class Day(
     val home: List<Task> = emptyList(),
 )
 
-/** amount — целые тенге; date — ISO yyyy-MM-dd. */
-data class Money(val amount: Long, val income: Boolean, val note: String, val date: String)
+/** amount — целые тенге; date — ISO yyyy-MM-dd; category/emoji копируются, чтобы запись пережила удаление категории. */
+data class Money(
+    val amount: Long,
+    val income: Boolean,
+    val note: String,
+    val date: String,
+    val category: String = "",
+    val emoji: String = "",
+)
+
+data class Category(val name: String, val emoji: String, val income: Boolean)
+
+val DEFAULT_CATEGORIES = listOf(
+    Category("Зарплата", "💼", true),
+    Category("Аренда", "🏠", true),
+    Category("Семья", "👨‍👩‍👧", false),
+    Category("Работа", "💻", false),
+    Category("Продукты", "🛒", false),
+)
+
+data class CategoryTotal(val emoji: String, val name: String, val total: Long)
 
 fun balance(items: List<Money>): Long = items.sumOf { if (it.income) it.amount else -it.amount }
+
+fun totalsByCategory(items: List<Money>, income: Boolean): List<CategoryTotal> = items
+    .filter { it.income == income }
+    .groupBy { it.emoji to it.category }
+    .map { (k, v) -> CategoryTotal(k.first, k.second, v.sumOf { it.amount }) }
+    .sortedByDescending { it.total }
 
 fun <T> List<T>.replace(i: Int, v: T) = toMutableList().also { it[i] = v }
 fun <T> List<T>.without(i: Int) = filterIndexed { j, _ -> j != i }
@@ -58,12 +83,22 @@ class Store(context: Context) {
 
     fun money(): List<Money> = read(MONEY) { raw ->
         objects(JSONArray(raw)).map {
-            Money(it.getLong("amount"), it.getBoolean("income"), it.optString("note"), it.getString("date"))
+            Money(it.getLong("amount"), it.getBoolean("income"), it.optString("note"), it.getString("date"),
+                it.optString("category"), it.optString("emoji"))
         }
     } ?: emptyList()
 
     fun saveMoney(items: List<Money>) = write(MONEY, JSONArray(items.map {
         JSONObject().put("amount", it.amount).put("income", it.income).put("note", it.note).put("date", it.date)
+            .put("category", it.category).put("emoji", it.emoji)
+    }))
+
+    fun categories(): List<Category> = read(CATEGORIES) { raw ->
+        objects(JSONArray(raw)).map { Category(it.getString("name"), it.getString("emoji"), it.getBoolean("income")) }
+    } ?: DEFAULT_CATEGORIES
+
+    fun saveCategories(cats: List<Category>) = write(CATEGORIES, JSONArray(cats.map {
+        JSONObject().put("name", it.name).put("emoji", it.emoji).put("income", it.income)
     }))
 
     private fun <T> read(key: String, parse: (String) -> T): T? {
@@ -92,6 +127,7 @@ class Store(context: Context) {
     private companion object {
         const val GOALS = "data" // старый ключ, чтобы сохранённые цели не пропали
         const val MONEY = "money"
+        const val CATEGORIES = "categories"
         val DAY_KEY = Regex("day_\\d{4}-\\d{2}-\\d{2}")
     }
 }
