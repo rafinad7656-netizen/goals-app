@@ -4,11 +4,9 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -37,6 +35,7 @@ private val EMOJIS = listOf(
     "🎓", "📚", "⚽", "🎮", "🔧", "🧾",
 )
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MoneyScreen(store: Store) {
     var items by remember { mutableStateOf(store.money()) }
@@ -87,7 +86,7 @@ fun MoneyScreen(store: Store) {
                     style = MaterialTheme.typography.labelMedium, color = c.onSurfaceVariant,
                     modifier = Modifier.padding(top = 12.dp))
                 Spacer(Modifier.height(8.dp))
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     cats.filter { it.income == income }.forEach { cat ->
                         Chip("${cat.emoji} ${cat.name}", selected == cat,
                             onClick = { selected = if (selected == cat) null else cat },
