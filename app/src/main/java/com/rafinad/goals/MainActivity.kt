@@ -5,6 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
@@ -85,7 +87,11 @@ fun App(store: Store) {
                      else "${greeting(LocalTime.now().hour)}, ${p.name}!")
             },
             text = {
-                Column {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    nudgeKind(LocalTime.now().hour)?.let {
+                        NudgeBlock(it, store.day(LocalDate.now()).goal)
+                        Spacer(Modifier.height(16.dp))
+                    }
                     if (p.reason.isNotBlank()) {
                         Text("Помните, зачем вы здесь: ${p.reason}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(16.dp))

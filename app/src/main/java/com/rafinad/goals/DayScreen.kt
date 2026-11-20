@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 private val DAY_FORMAT = DateTimeFormatter.ofPattern("d MMMM, EEEE", RU)
@@ -38,6 +39,8 @@ fun DayScreen(store: Store, date: LocalDate, tip: Quote, onNextTip: () -> Unit, 
             if (!isToday) TextButton(onToday) { Text("К сегодня") }
             IconButton(onProfile) { Icon(Icons.Default.Person, "Профиль") }
         }
+
+        if (isToday) nudgeKind(LocalTime.now().hour)?.let { NudgeBlock(it, day.goal) }
 
         QuoteCard(tip, onNextTip)
 

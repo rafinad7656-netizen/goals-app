@@ -41,6 +41,16 @@ class GoalTest {
         assertEquals(false, isBirthday("", today))
     }
 
+    @Test fun nudgeByHour() {
+        assertEquals(null, nudgeKind(21))
+        assertEquals(NudgeKind.EVENING, nudgeKind(22))
+        assertEquals(NudgeKind.EVENING, nudgeKind(23))
+        assertEquals(NudgeKind.NIGHT, nudgeKind(0))
+        assertEquals(NudgeKind.NIGHT, nudgeKind(4))
+        assertEquals(NudgeKind.MORNING, nudgeKind(5))
+        assertEquals(null, nudgeKind(11))
+    }
+
     @Test fun listHelpers() {
         assertEquals(listOf(1, 9, 3), listOf(1, 2, 3).replace(1, 9))
         assertEquals(listOf(1, 3), listOf(1, 2, 3).without(1))
