@@ -40,6 +40,23 @@ val DEFAULT_CATEGORIES = listOf(
     Category("Продукты", "🛒", false),
 )
 
+/** birthday — ISO yyyy-MM-dd или пусто. */
+data class Profile(val name: String, val birthday: String, val occupation: String, val reason: String)
+
+fun greeting(hour: Int) = when (hour) {
+    in 5..11 -> "Доброе утро"
+    in 12..16 -> "Добрый день"
+    in 17..22 -> "Добрый вечер"
+    else -> "Доброй ночи"
+}
+
+// shortcut: рождённые 29 февраля не получат поздравление в невисокосный год
+fun isBirthday(birthday: String, today: LocalDate): Boolean {
+    if (birthday.isBlank()) return false
+    val b = LocalDate.parse(birthday)
+    return b.month == today.month && b.dayOfMonth == today.dayOfMonth
+}
+
 data class CategoryTotal(val emoji: String, val name: String, val total: Long)
 
 fun balance(items: List<Money>): Long = items.sumOf { if (it.income) it.amount else -it.amount }
@@ -93,6 +110,14 @@ class Store(context: Context) {
             .put("category", it.category).put("emoji", it.emoji)
     }))
 
+    fun profile(): Profile? = read(PROFILE) { raw ->
+        val o = JSONObject(raw)
+        Profile(o.getString("name"), o.optString("birthday"), o.optString("occupation"), o.optString("reason"))
+    }
+
+    fun saveProfile(p: Profile) = write(PROFILE, JSONObject()
+        .put("name", p.name).put("birthday", p.birthday).put("occupation", p.occupation).put("reason", p.reason))
+
     fun categories(): List<Category> = read(CATEGORIES) { raw ->
         objects(JSONArray(raw)).map { Category(it.getString("name"), it.getString("emoji"), it.getBoolean("income")) }
     } ?: DEFAULT_CATEGORIES
@@ -128,6 +153,7 @@ class Store(context: Context) {
         const val GOALS = "data" // старый ключ, чтобы сохранённые цели не пропали
         const val MONEY = "money"
         const val CATEGORIES = "categories"
+        const val PROFILE = "profile"
         val DAY_KEY = Regex("day_\\d{4}-\\d{2}-\\d{2}")
     }
 }

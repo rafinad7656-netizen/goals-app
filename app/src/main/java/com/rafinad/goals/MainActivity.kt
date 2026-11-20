@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
+import java.time.LocalTime
 import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
@@ -37,6 +38,16 @@ enum class Tab(val label: String, val icon: ImageVector) {
 
 @Composable
 fun App(store: Store) {
+    var profile by remember { mutableStateOf(store.profile()) }
+    var editingProfile by rememberSaveable { mutableStateOf(false) }
+    val p = profile
+    if (p == null || editingProfile) {
+        ProfileScreen(p, if (p == null) null else ({ editingProfile = false })) { new ->
+            store.saveProfile(new); profile = new; editingProfile = false
+        }
+        return
+    }
+
     var tab by rememberSaveable { mutableStateOf(Tab.DAY) }
     var date by rememberSaveable { mutableStateOf(LocalDate.now()) }
     var tip by rememberSaveable { mutableIntStateOf(Random.nextInt(QUOTES.size)) }
@@ -55,7 +66,7 @@ fun App(store: Store) {
     ) { pad ->
         Box(Modifier.padding(pad)) {
             when (tab) {
-                Tab.DAY -> DayScreen(store, date, QUOTES[tip], nextTip) { date = LocalDate.now() }
+                Tab.DAY -> DayScreen(store, date, QUOTES[tip], nextTip, { editingProfile = true }) { date = LocalDate.now() }
                 Tab.CALENDAR -> CalendarScreen(store, date) { date = it; tab = Tab.DAY }
                 Tab.GOALS -> GoalsScreen(store)
                 Tab.MONEY -> MoneyScreen(store)
@@ -69,9 +80,18 @@ fun App(store: Store) {
             onDismissRequest = { showTip = false },
             confirmButton = { TextButton({ showTip = false }) { Text("Спасибо") } },
             dismissButton = { TextButton(nextTip) { Text("Ещё совет") } },
-            title = { Text("Совет дня") },
+            title = {
+                Text(if (isBirthday(p.birthday, LocalDate.now())) "С днём рождения, ${p.name}! 🎉"
+                     else "${greeting(LocalTime.now().hour)}, ${p.name}!")
+            },
             text = {
                 Column {
+                    if (p.reason.isNotBlank()) {
+                        Text("Помните, зачем вы здесь: ${p.reason}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(16.dp))
+                    }
+                    Text("СОВЕТ ДНЯ", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(6.dp))
                     Text("«${q.text}»", style = MaterialTheme.typography.bodyLarge)
                     Spacer(Modifier.height(8.dp))
                     Text("— ${q.author}", color = MaterialTheme.colorScheme.onSurfaceVariant)

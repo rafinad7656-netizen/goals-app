@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,7 +20,7 @@ import java.time.format.DateTimeFormatter
 private val DAY_FORMAT = DateTimeFormatter.ofPattern("d MMMM, EEEE", RU)
 
 @Composable
-fun DayScreen(store: Store, date: LocalDate, tip: Quote, onNextTip: () -> Unit, onToday: () -> Unit) {
+fun DayScreen(store: Store, date: LocalDate, tip: Quote, onNextTip: () -> Unit, onProfile: () -> Unit, onToday: () -> Unit) {
     var day by remember(date) { mutableStateOf(store.day(date)) }
     fun update(d: Day) { day = d; store.saveDay(date, d) }
     val isToday = date == LocalDate.now()
@@ -35,6 +36,7 @@ fun DayScreen(store: Store, date: LocalDate, tip: Quote, onNextTip: () -> Unit, 
                 Text(date.format(DAY_FORMAT), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
             }
             if (!isToday) TextButton(onToday) { Text("К сегодня") }
+            IconButton(onProfile) { Icon(Icons.Default.Person, "Профиль") }
         }
 
         QuoteCard(tip, onNextTip)

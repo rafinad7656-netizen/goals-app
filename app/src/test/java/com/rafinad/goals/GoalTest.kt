@@ -27,6 +27,20 @@ class GoalTest {
         )
     }
 
+    @Test fun greetingByHour() {
+        assertEquals("Доброе утро", greeting(8))
+        assertEquals("Добрый день", greeting(13))
+        assertEquals("Добрый вечер", greeting(20))
+        assertEquals("Доброй ночи", greeting(2))
+    }
+
+    @Test fun birthdayMatchesDayAndMonthOnly() {
+        val today = java.time.LocalDate.of(2026, 11, 20)
+        assertEquals(true, isBirthday("1995-11-20", today))
+        assertEquals(false, isBirthday("1995-11-21", today))
+        assertEquals(false, isBirthday("", today))
+    }
+
     @Test fun listHelpers() {
         assertEquals(listOf(1, 9, 3), listOf(1, 2, 3).replace(1, 9))
         assertEquals(listOf(1, 3), listOf(1, 2, 3).without(1))
