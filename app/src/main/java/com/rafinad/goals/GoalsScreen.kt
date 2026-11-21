@@ -39,7 +39,7 @@ fun GoalsScreen(store: Store) {
                     LinearProgressIndicator(
                         progress = { goal.progress },
                         modifier = Modifier.fillMaxWidth().padding(end = 12.dp).height(4.dp).clip(CircleShape),
-                        color = c.primary, trackColor = c.surfaceVariant,
+                        color = Accent, trackColor = c.surfaceVariant,
                     )
                     if (expanded == i) {
                         Spacer(Modifier.height(8.dp))

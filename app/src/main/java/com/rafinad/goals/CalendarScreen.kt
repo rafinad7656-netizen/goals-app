@@ -87,9 +87,10 @@ fun CalendarScreen(store: Store, selected: LocalDate, onOpenDay: (LocalDate) -> 
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
                 dayEntries.forEach { m ->
-                    Row(Modifier.padding(vertical = 6.dp)) {
-                        Text("${m.emoji.ifBlank { "•" }} ${m.category.ifBlank { m.note.ifBlank { if (m.income) "Доход" else "Расход" } }}",
-                            Modifier.weight(1f))
+                    Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        CategoryBadge(m.icon, m.income, 32.dp)
+                        Text(m.category.ifBlank { m.note.ifBlank { if (m.income) "Доход" else "Расход" } },
+                            Modifier.weight(1f).padding(start = 10.dp))
                         Text((if (m.income) "+" else "−") + money(m.amount), color = if (m.income) Income else Expense)
                     }
                 }
@@ -113,9 +114,9 @@ private fun RowScope.DayCell(d: LocalDate, selected: Boolean, busy: Boolean, spe
             Text("${d.dayOfMonth}", color = if (selected) c.onPrimary else c.onSurface,
                 fontWeight = if (today) FontWeight.Bold else FontWeight.Normal)
             Text(spent?.let { "−" + compact(it) } ?: "", fontSize = 9.sp, maxLines = 1,
-                color = if (selected) c.onPrimary else Expense)
+                color = if (selected) c.onPrimary else c.onSurfaceVariant)
             Box(Modifier.size(4.dp).clip(CircleShape).background(
-                if (!busy) Color.Transparent else if (selected) c.onPrimary else c.primary))
+                if (!busy) Color.Transparent else if (selected) c.onPrimary else Accent))
         }
     }
 }

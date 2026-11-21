@@ -20,24 +20,24 @@ data class Day(
     val home: List<Task> = emptyList(),
 )
 
-/** amount — целые тенге; date — ISO yyyy-MM-dd; category/emoji копируются, чтобы запись пережила удаление категории. */
+/** amount — целые тенге; date — ISO yyyy-MM-dd; category/icon копируются, чтобы запись пережила удаление категории. */
 data class Money(
     val amount: Long,
     val income: Boolean,
     val note: String,
     val date: String,
     val category: String = "",
-    val emoji: String = "",
+    val icon: String = "",
 )
 
-data class Category(val name: String, val emoji: String, val income: Boolean)
+data class Category(val name: String, val icon: String, val income: Boolean)
 
 val DEFAULT_CATEGORIES = listOf(
-    Category("Зарплата", "💼", true),
-    Category("Аренда", "🏠", true),
-    Category("Семья", "👨‍👩‍👧", false),
-    Category("Работа", "💻", false),
-    Category("Продукты", "🛒", false),
+    Category("Зарплата", "work", true),
+    Category("Аренда", "home", true),
+    Category("Семья", "family", false),
+    Category("Работа", "laptop", false),
+    Category("Продукты", "cart", false),
 )
 
 /** birthday — ISO yyyy-MM-dd или пусто. */
@@ -57,7 +57,7 @@ fun isBirthday(birthday: String, today: LocalDate): Boolean {
     return b.month == today.month && b.dayOfMonth == today.dayOfMonth
 }
 
-data class CategoryTotal(val emoji: String, val name: String, val total: Long)
+data class CategoryTotal(val icon: String, val name: String, val total: Long)
 
 fun balance(items: List<Money>): Long = items.sumOf { if (it.income) it.amount else -it.amount }
 
@@ -74,7 +74,7 @@ fun compact(v: Long): String = when {
 
 fun totalsByCategory(items: List<Money>, income: Boolean): List<CategoryTotal> = items
     .filter { it.income == income }
-    .groupBy { it.emoji to it.category }
+    .groupBy { it.icon to it.category }
     .map { (k, v) -> CategoryTotal(k.first, k.second, v.sumOf { it.amount }) }
     .sortedByDescending { it.total }
 
@@ -118,7 +118,7 @@ class Store(context: Context) {
 
     fun saveMoney(items: List<Money>) = write(MONEY, JSONArray(items.map {
         JSONObject().put("amount", it.amount).put("income", it.income).put("note", it.note).put("date", it.date)
-            .put("category", it.category).put("emoji", it.emoji)
+            .put("category", it.category).put("emoji", it.icon)
     }))
 
     /** Баланс = startBalance + все доходы − все расходы. */
@@ -139,7 +139,7 @@ class Store(context: Context) {
     } ?: DEFAULT_CATEGORIES
 
     fun saveCategories(cats: List<Category>) = write(CATEGORIES, JSONArray(cats.map {
-        JSONObject().put("name", it.name).put("emoji", it.emoji).put("income", it.income)
+        JSONObject().put("name", it.name).put("emoji", it.icon).put("income", it.income)
     }))
 
     private fun <T> read(key: String, parse: (String) -> T): T? {

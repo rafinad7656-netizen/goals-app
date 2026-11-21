@@ -16,3 +16,20 @@ jobs:
         with:
           name: goals-app-debug
           path: app/build/outputs/apk/debug/*.apk
+
+      # Подписанный .aab для Google Play — собирается, только когда в Settings → Secrets заданы ключи.
+      - name: Signed release bundle
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then echo "Signing secrets not set - skipping release bundle"; exit 0; fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          KEYSTORE_FILE="$RUNNER_TEMP/upload.jks" ./gradlew bundleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: goals-app-release-aab
+          path: app/build/outputs/bundle/release/*.aab
+          if-no-files-found: ignore

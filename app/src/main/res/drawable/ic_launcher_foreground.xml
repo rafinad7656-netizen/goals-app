@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Кольцо с галочкой; всё внутри безопасной зоны адаптивной иконки (радиус 33). -->
+<!-- Незамкнутое кольцо прогресса (¾) с галочкой; всё в безопасной зоне адаптивной иконки (радиус 33). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
     <path
-        android:pathData="M54,32a22,22 0,1 1,0 44a22,22 0,1 1,0 -44"
-        android:strokeColor="#FFFFFF" android:strokeWidth="4.5" />
+        android:pathData="M54,31A23,23 0,1 1,31 54"
+        android:strokeColor="#FAFAF7" android:strokeWidth="5"
+        android:strokeLineCap="round" />
     <path
         android:pathData="M44,54.5L51,61.5L65,47"
-        android:strokeColor="#FFFFFF" android:strokeWidth="5"
+        android:strokeColor="#FAFAF7" android:strokeWidth="5.5"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

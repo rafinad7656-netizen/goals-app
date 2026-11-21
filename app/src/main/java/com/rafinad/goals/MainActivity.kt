@@ -8,10 +8,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -32,10 +32,10 @@ class MainActivity : ComponentActivity() {
 }
 
 enum class Tab(val label: String, val icon: ImageVector) {
-    DAY("День", Icons.Default.Home),
-    CALENDAR("Календарь", Icons.Default.DateRange),
-    GOALS("Цели", Icons.Default.Star),
-    MONEY("Финансы", Icons.Default.ShoppingCart),
+    DAY("День", Icons.Outlined.WbSunny),
+    CALENDAR("Календарь", Icons.Outlined.DateRange),
+    GOALS("Цели", Icons.Outlined.Flag),
+    MONEY("Финансы", Icons.Outlined.AccountBalanceWallet),
 }
 
 @Composable
@@ -83,7 +83,7 @@ fun App(store: Store) {
             confirmButton = { TextButton({ showTip = false }) { Text("Спасибо") } },
             dismissButton = { TextButton(nextTip) { Text("Ещё совет") } },
             title = {
-                Text(if (isBirthday(p.birthday, LocalDate.now())) "С днём рождения, ${p.name}! 🎉"
+                Text(if (isBirthday(p.birthday, LocalDate.now())) "С днём рождения, ${p.name}!"
                      else "${greeting(LocalTime.now().hour)}, ${p.name}!")
             },
             text = {

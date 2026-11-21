@@ -46,11 +46,11 @@ val MORNING_TIPS = listOf(
 fun NudgeBlock(kind: NudgeKind, mainGoal: String) {
     val fact = remember(kind) { (if (kind == NudgeKind.MORNING) MORNING_TIPS else SLEEP_FACTS).random() }
     val (title, lead) = when (kind) {
-        NudgeKind.EVENING -> "🌙 Пора готовиться ко сну" to
+        NudgeKind.EVENING -> "Пора готовиться ко сну" to
             "Отложите телефон — завтрашние дела подождут. Лягте до полуночи, и утром будет больше сил."
-        NudgeKind.NIGHT -> "😴 Уже за полночь" to
+        NudgeKind.NIGHT -> "Уже за полночь" to
             "Сон сейчас важнее любых дел. Вот почему:"
-        NudgeKind.MORNING -> "☀️ Начните с главного" to
+        NudgeKind.MORNING -> "Начните с главного" to
             if (mainGoal.isNotBlank()) "Главная цель дня: «$mainGoal». Сделайте её первой, пока голова свежая."
             else "Запишите главную цель дня и сделайте её первой, пока голова свежая."
     }
