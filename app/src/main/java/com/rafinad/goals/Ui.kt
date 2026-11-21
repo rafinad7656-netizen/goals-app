@@ -20,6 +20,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.Locale
 
 val RU: Locale = Locale.forLanguageTag("ru")
@@ -52,6 +55,33 @@ fun playDone() {
 }
 
 fun money(v: Long) = String.format(RU, "%,d ₸", v)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DatePick(
+    initial: LocalDate?,
+    onDismiss: () -> Unit,
+    displayed: LocalDate? = initial,
+    yearRange: IntRange = DatePickerDefaults.YearRange,
+    onPick: (LocalDate) -> Unit,
+) {
+    fun LocalDate.millis() = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = initial?.millis(),
+        initialDisplayedMonthMillis = displayed?.millis(),
+        yearRange = yearRange,
+    )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton({
+                state.selectedDateMillis?.let { onPick(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()) }
+                onDismiss()
+            }) { Text("Готово") }
+        },
+        dismissButton = { TextButton(onDismiss) { Text("Отмена") } },
+    ) { DatePicker(state) }
+}
 
 @Composable
 fun ScreenTitle(text: String) =

@@ -1,22 +1,27 @@
 package com.rafinad.goals
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -38,9 +43,9 @@ private val EMOJIS = listOf(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MoneyScreen(store: Store) {
-    var items by remember { mutableStateOf(store.money()) }
+    var entries by remember { mutableStateOf(store.money()) }
     var cats by remember { mutableStateOf(store.categories()) }
-    fun update(new: List<Money>) { items = new; store.saveMoney(new) }
+    fun update(new: List<Money>) { entries = new; store.saveMoney(new) }
     fun updateCats(new: List<Category>) { cats = new; store.saveCategories(new) }
 
     var income by remember { mutableStateOf(false) }
@@ -49,24 +54,34 @@ fun MoneyScreen(store: Store) {
     var note by remember { mutableStateOf("") }
     var creating by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<Category?>(null) }
+    var start by remember { mutableLongStateOf(store.startBalance()) }
+    var editingBalance by remember { mutableStateOf(false) }
+    var entryDate by remember { mutableStateOf(LocalDate.now()) }
+    var pickingDate by remember { mutableStateOf(false) }
     val c = MaterialTheme.colorScheme
 
-    val month = items.filter { YearMonth.from(LocalDate.parse(it.date)) == YearMonth.now() }
+    val total = start + balance(entries)
+    val month = entries.filter { YearMonth.from(LocalDate.parse(it.date)) == YearMonth.now() }
     val totals = totalsByCategory(month, income)
     fun add() {
         val a = amount.toLongOrNull()?.takeIf { it > 0 } ?: return
         val cat = selected
-        update(listOf(Money(a, income, note.trim(), LocalDate.now().toString(), cat?.name ?: "", cat?.emoji ?: "")) + items)
+        update(listOf(Money(a, income, note.trim(), entryDate.toString(), cat?.name ?: "", cat?.emoji ?: "")) + entries)
         amount = ""; note = ""
     }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { ScreenTitle("Финансы") }
         item {
-            Surface(Modifier.fillMaxWidth(), shape = CardShape, color = c.primary, contentColor = c.onPrimary) {
+            Surface({ editingBalance = true }, Modifier.fillMaxWidth(), shape = CardShape, color = c.primary, contentColor = c.onPrimary) {
                 Column(Modifier.padding(20.dp)) {
-                    Text("Баланс", color = c.onPrimary.copy(alpha = 0.6f))
-                    Text(money(balance(items)), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.SemiBold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Баланс", Modifier.weight(1f), color = c.onPrimary.copy(alpha = 0.6f))
+                        Icon(Icons.Default.Edit, "Указать баланс", Modifier.size(18.dp), tint = c.onPrimary.copy(alpha = 0.6f))
+                    }
+                    Text(money(total), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.SemiBold)
+                    if (start == 0L && entries.isEmpty()) Text("Нажмите, чтобы указать, сколько у вас денег сейчас",
+                        style = MaterialTheme.typography.bodySmall, color = c.onPrimary.copy(alpha = 0.6f))
                     Spacer(Modifier.height(12.dp))
                     Row {
                         Stat("Доходы за месяц", month.filter { it.income }.sumOf { it.amount }, Modifier.weight(1f))
@@ -99,6 +114,11 @@ fun MoneyScreen(store: Store) {
                 PlainField(amount, { v -> amount = v.filter { it.isDigit() }.take(12) }, "Сумма, ₸",
                     keyboard = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true)
                 PlainField(note, { note = it }, "Комментарий", singleLine = true)
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                    Text("Дата:", color = c.onSurfaceVariant, modifier = Modifier.padding(end = 8.dp))
+                    Chip(if (entryDate == LocalDate.now()) "Сегодня" else entryDate.format(SHORT), true, { pickingDate = true })
+                    if (entryDate != LocalDate.now()) TextButton({ entryDate = LocalDate.now() }) { Text("Сегодня") }
+                }
                 Button({ add() }, Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(if (income) Income else Expense, Color.White)) {
                     Text(if (income) "+ Добавить доход" else "− Добавить расход")
@@ -106,27 +126,26 @@ fun MoneyScreen(store: Store) {
             }
         }
         if (totals.isNotEmpty()) item {
-            Section(if (income) "Доходы по категориям за месяц" else "Расходы по категориям за месяц") {
-                val max = totals.first().total.toFloat()
-                totals.forEach { t ->
-                    Column(Modifier.padding(top = 10.dp)) {
-                        Row {
-                            Text("${t.emoji.ifBlank { "•" }} ${t.name.ifBlank { "Без категории" }}", Modifier.weight(1f))
-                            Text(money(t.total), fontWeight = FontWeight.Medium)
-                        }
-                        LinearProgressIndicator(
-                            progress = { t.total / max },
-                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(4.dp).clip(CircleShape),
-                            color = if (income) Income else Expense, trackColor = c.surfaceVariant,
-                        )
+            Section(if (income) "Доходы за месяц" else "Расходы за месяц") {
+                val sum = totals.sumOf { it.total }
+                Box(Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
+                    Donut(totals, money(sum))
+                }
+                totals.forEachIndexed { i, t ->
+                    Row(Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(10.dp).clip(CircleShape).background(PALETTE[i % PALETTE.size]))
+                        Text("${t.emoji.ifBlank { "•" }} ${t.name.ifBlank { "Без категории" }}",
+                            Modifier.weight(1f).padding(start = 8.dp))
+                        Text("${t.total * 100 / sum}%", color = c.onSurfaceVariant, modifier = Modifier.padding(end = 12.dp))
+                        Text(money(t.total), fontWeight = FontWeight.Medium)
                     }
                 }
             }
         }
-        if (items.isEmpty()) item {
+        if (entries.isEmpty()) item {
             Text("Записей пока нет", Modifier.padding(8.dp), color = c.onSurfaceVariant)
         }
-        itemsIndexed(items) { i, m ->
+        items(entries.sortedByDescending { it.date }) { m ->
             Surface(Modifier.fillMaxWidth(), shape = CardShape, color = c.surface) {
                 Row(Modifier.padding(start = 12.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(40.dp).clip(CircleShape).background(c.surfaceVariant), contentAlignment = Alignment.Center) {
@@ -140,7 +159,7 @@ fun MoneyScreen(store: Store) {
                     }
                     Text((if (m.income) "+" else "−") + money(m.amount), color = if (m.income) Income else Expense,
                         fontWeight = FontWeight.Medium)
-                    IconButton({ update(items.without(i)) }) { Icon(Icons.Default.Close, "Удалить", tint = c.onSurfaceVariant) }
+                    IconButton({ update(entries - m) }) { Icon(Icons.Default.Close, "Удалить", tint = c.onSurfaceVariant) }
                 }
             }
         }
@@ -151,6 +170,32 @@ fun MoneyScreen(store: Store) {
         if (existing == null) updateCats(cats + cat)
         selected = existing ?: cat
         creating = false
+    }
+
+    if (pickingDate) DatePick(entryDate, { pickingDate = false }) { entryDate = it }
+
+    if (editingBalance) {
+        var v by remember { mutableStateOf(if (total > 0) "$total" else "") }
+        AlertDialog(
+            onDismissRequest = { editingBalance = false },
+            confirmButton = {
+                TextButton({
+                    v.toLongOrNull()?.let { start = it - balance(entries); store.saveStartBalance(start) }
+                    editingBalance = false
+                }, enabled = v.toLongOrNull() != null) { Text("Сохранить") }
+            },
+            dismissButton = { TextButton({ editingBalance = false }) { Text("Отмена") } },
+            title = { Text("Сколько у вас сейчас?") },
+            text = {
+                Column {
+                    Text("Укажите текущую сумму. Дальше баланс будет меняться от доходов и расходов.",
+                        color = c.onSurfaceVariant, modifier = Modifier.padding(bottom = 12.dp))
+                    OutlinedTextField(v, { s -> v = s.filter { it.isDigit() }.take(12) }, singleLine = true,
+                        suffix = { Text("₸") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                }
+            },
+            shape = CardShape, containerColor = c.surface,
+        )
     }
 
     deleting?.let { cat ->
@@ -168,6 +213,30 @@ fun MoneyScreen(store: Store) {
             text = { Text("Уже добавленные записи останутся.") },
             shape = CardShape, containerColor = c.surface,
         )
+    }
+}
+
+private val PALETTE = listOf(
+    Color(0xFF5B8DEF), Color(0xFFE57373), Color(0xFFFFB74D), Color(0xFF81C784),
+    Color(0xFFBA68C8), Color(0xFF4DB6AC), Color(0xFFF06292), Color(0xFF90A4AE),
+)
+
+@Composable
+private fun Donut(totals: List<CategoryTotal>, center: String) {
+    val sum = totals.sumOf { it.total }.toFloat()
+    Box(Modifier.size(160.dp), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val stroke = 22.dp.toPx()
+            var angle = -90f
+            totals.forEachIndexed { i, t ->
+                val sweep = 360f * t.total / sum
+                drawArc(PALETTE[i % PALETTE.size], angle, sweep, useCenter = false,
+                    topLeft = Offset(stroke / 2, stroke / 2), size = Size(size.width - stroke, size.height - stroke),
+                    style = Stroke(stroke))
+                angle += sweep
+            }
+        }
+        Text(center, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
     }
 }
 

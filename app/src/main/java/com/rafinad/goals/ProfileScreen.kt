@@ -10,9 +10,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 private val FieldShape = RoundedCornerShape(16.dp)
@@ -23,7 +21,7 @@ private val REASONS = listOf(
 )
 
 /** Создание профиля при первом запуске; с onCancel — редактирование. */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProfileScreen(initial: Profile?, onCancel: (() -> Unit)?, onSave: (Profile) -> Unit) {
     var name by rememberSaveable { mutableStateOf(initial?.name ?: "") }
@@ -76,23 +74,9 @@ fun ProfileScreen(initial: Profile?, onCancel: (() -> Unit)?, onSave: (Profile) 
     }
 
     if (picking) {
-        val millis = birthday.takeIf { it.isNotBlank() }
-            ?.let { LocalDate.parse(it).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli() }
-        val state = rememberDatePickerState(
-            initialSelectedDateMillis = millis,
-            initialDisplayedMonthMillis = millis ?: LocalDate.of(2000, 1, 1).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-            yearRange = 1920..LocalDate.now().year,
-        )
-        DatePickerDialog(
-            onDismissRequest = { picking = false },
-            confirmButton = {
-                TextButton({
-                    state.selectedDateMillis?.let { birthday = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().toString() }
-                    picking = false
-                }) { Text("Готово") }
-            },
-            dismissButton = { TextButton({ picking = false }) { Text("Отмена") } },
-        ) { DatePicker(state) }
+        val current = birthday.takeIf { it.isNotBlank() }?.let { LocalDate.parse(it) }
+        DatePick(current, { picking = false }, displayed = current ?: LocalDate.of(2000, 1, 1),
+            yearRange = 1920..LocalDate.now().year) { birthday = it.toString() }
     }
 }
 

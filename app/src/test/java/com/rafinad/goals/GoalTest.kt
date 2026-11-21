@@ -51,6 +51,22 @@ class GoalTest {
         assertEquals(null, nudgeKind(11))
     }
 
+    @Test fun expensesSummedPerDay() {
+        val items = listOf(
+            Money(100, false, "", "2026-11-20"),
+            Money(250, false, "", "2026-11-20"),
+            Money(5000, true, "", "2026-11-20"),
+            Money(40, false, "", "2026-11-21"),
+        )
+        assertEquals(mapOf("2026-11-20" to 350L, "2026-11-21" to 40L), expensesByDay(items))
+    }
+
+    @Test fun compactAmounts() {
+        assertEquals("450", compact(450))
+        assertEquals("12к", compact(12_500))
+        assertEquals("1,2м", compact(1_250_000))
+    }
+
     @Test fun listHelpers() {
         assertEquals(listOf(1, 9, 3), listOf(1, 2, 3).replace(1, 9))
         assertEquals(listOf(1, 3), listOf(1, 2, 3).without(1))

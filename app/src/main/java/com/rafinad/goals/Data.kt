@@ -61,6 +61,17 @@ data class CategoryTotal(val emoji: String, val name: String, val total: Long)
 
 fun balance(items: List<Money>): Long = items.sumOf { if (it.income) it.amount else -it.amount }
 
+/** Сумма расходов по дням: ключ — ISO-дата. */
+fun expensesByDay(items: List<Money>): Map<String, Long> =
+    items.filter { !it.income }.groupBy { it.date }.mapValues { (_, v) -> v.sumOf { it.amount } }
+
+/** Короткая запись суммы для клетки календаря: 450, 12к, 1,2м. */
+fun compact(v: Long): String = when {
+    v < 1_000 -> "$v"
+    v < 1_000_000 -> "${v / 1_000}к"
+    else -> "${v / 1_000_000},${v % 1_000_000 / 100_000}м"
+}
+
 fun totalsByCategory(items: List<Money>, income: Boolean): List<CategoryTotal> = items
     .filter { it.income == income }
     .groupBy { it.emoji to it.category }
@@ -110,6 +121,11 @@ class Store(context: Context) {
             .put("category", it.category).put("emoji", it.emoji)
     }))
 
+    /** Баланс = startBalance + все доходы − все расходы. */
+    fun startBalance(): Long = prefs.getLong(START_BALANCE, 0L)
+
+    fun saveStartBalance(v: Long) = prefs.edit().putLong(START_BALANCE, v).apply()
+
     fun profile(): Profile? = read(PROFILE) { raw ->
         val o = JSONObject(raw)
         Profile(o.getString("name"), o.optString("birthday"), o.optString("occupation"), o.optString("reason"))
@@ -154,6 +170,7 @@ class Store(context: Context) {
         const val MONEY = "money"
         const val CATEGORIES = "categories"
         const val PROFILE = "profile"
+        const val START_BALANCE = "start_balance"
         val DAY_KEY = Regex("day_\\d{4}-\\d{2}-\\d{2}")
     }
 }
