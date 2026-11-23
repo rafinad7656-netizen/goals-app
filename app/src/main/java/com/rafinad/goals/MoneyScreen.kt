@@ -339,19 +339,7 @@ private fun NewCategoryDialog(income: Boolean, onDismiss: () -> Unit, onCreate: 
                 OutlinedTextField(name, { name = it.take(24) }, label = { Text("Название") }, singleLine = true)
                 Text("Иконка", style = MaterialTheme.typography.labelLarge, color = c.onSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-                CATEGORY_ICONS.entries.chunked(6).forEach { row ->
-                    Row {
-                        row.forEach { (key, vector) ->
-                            val on = key == icon
-                            Box(
-                                Modifier.size(40.dp).clip(CircleShape)
-                                    .background(if (on) Accent else Color.Transparent)
-                                    .clickable { icon = key },
-                                contentAlignment = Alignment.Center,
-                            ) { Icon(vector, null, Modifier.size(22.dp), tint = if (on) Paper else c.onSurface) }
-                        }
-                    }
-                }
+                IconPicker(icon) { icon = it }
             }
         },
         shape = CardShape,

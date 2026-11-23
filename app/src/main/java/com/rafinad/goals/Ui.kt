@@ -3,6 +3,7 @@ package com.rafinad.goals
 import android.media.AudioManager
 import android.media.ToneGenerator
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -80,7 +81,26 @@ val CATEGORY_ICONS: Map<String, ImageVector> = linkedMapOf(
     "flight" to Icons.Outlined.Flight, "phone" to Icons.Outlined.Smartphone, "bulb" to Icons.Outlined.Lightbulb,
     "school" to Icons.Outlined.School, "book" to Icons.AutoMirrored.Outlined.MenuBook, "sport" to Icons.Outlined.FitnessCenter,
     "game" to Icons.Outlined.VideogameAsset, "tools" to Icons.Outlined.Build, "receipt" to Icons.Outlined.Receipt,
+    "night" to Icons.Outlined.NightsStay, "spa" to Icons.Outlined.Spa, "check" to Icons.Outlined.CheckCircle,
 )
+
+@Composable
+fun IconPicker(selected: String, onPick: (String) -> Unit) {
+    val c = MaterialTheme.colorScheme
+    CATEGORY_ICONS.entries.chunked(6).forEach { row ->
+        Row {
+            row.forEach { (key, vector) ->
+                val on = key == selected
+                Box(
+                    Modifier.size(40.dp).clip(CircleShape)
+                        .background(if (on) Accent else Color.Transparent)
+                        .clickable { onPick(key) },
+                    contentAlignment = Alignment.Center,
+                ) { Icon(vector, null, Modifier.size(22.dp), tint = if (on) Paper else c.onSurface) }
+            }
+        }
+    }
+}
 
 // Записи из прошлых версий хранили эмодзи.
 private val LEGACY_EMOJI = mapOf(

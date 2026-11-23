@@ -1,14 +1,20 @@
 package com.rafinad.goals
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.WbSunny
@@ -17,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import java.time.LocalTime
@@ -27,12 +34,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val store = Store(this)
+        Reminders.scheduleAll(this)
         setContent { AppTheme { App(store) } }
     }
 }
 
 enum class Tab(val label: String, val icon: ImageVector) {
     DAY("День", Icons.Outlined.WbSunny),
+    HABITS("Привычки", Icons.Outlined.CheckCircle),
     CALENDAR("Календарь", Icons.Outlined.DateRange),
     GOALS("Цели", Icons.Outlined.Flag),
     MONEY("Финансы", Icons.Outlined.AccountBalanceWallet),
@@ -48,6 +57,15 @@ fun App(store: Store) {
             store.saveProfile(new); profile = new; editingProfile = false
         }
         return
+    }
+
+    // Android 13+: спросить разрешение на уведомления о привычках
+    val ctx = LocalContext.current
+    val askNotifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) askNotifications.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     var tab by rememberSaveable { mutableStateOf(Tab.DAY) }
@@ -68,7 +86,10 @@ fun App(store: Store) {
     ) { pad ->
         Box(Modifier.padding(pad)) {
             when (tab) {
-                Tab.DAY -> DayScreen(store, date, QUOTES[tip], nextTip, { editingProfile = true }) { date = LocalDate.now() }
+                Tab.DAY -> DayScreen(store, date, QUOTES[tip], nextTip, { editingProfile = true }, { tab = Tab.HABITS }) {
+                    date = LocalDate.now()
+                }
+                Tab.HABITS -> HabitsScreen(store)
                 Tab.CALENDAR -> CalendarScreen(store, date) { date = it; tab = Tab.DAY }
                 Tab.GOALS -> GoalsScreen(store)
                 Tab.MONEY -> MoneyScreen(store)

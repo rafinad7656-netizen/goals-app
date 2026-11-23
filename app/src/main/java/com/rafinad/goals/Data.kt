@@ -5,6 +5,7 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.time.LocalDate
+import java.time.YearMonth
 
 data class Task(val title: String, val done: Boolean = false)
 
@@ -142,6 +143,43 @@ class Store(context: Context) {
         JSONObject().put("name", it.name).put("emoji", it.icon).put("income", it.income)
     }))
 
+    fun habits(): List<Habit> = read(HABITS) { raw ->
+        objects(JSONArray(raw)).map {
+            Habit(
+                it.getString("id"), it.getString("name"), it.optString("icon"),
+                ints(it.optJSONArray("days")).toSet(), strings(it.optJSONArray("steps")),
+                it.optString("hint"), it.optString("reminder"),
+            )
+        }
+    } ?: DEFAULT_HABITS
+
+    fun saveHabits(habits: List<Habit>) = write(HABITS, JSONArray(habits.map {
+        JSONObject().put("id", it.id).put("name", it.name).put("icon", it.icon)
+            .put("days", JSONArray(it.days.sorted())).put("steps", JSONArray(it.steps))
+            .put("hint", it.hint).put("reminder", it.reminder)
+    }))
+
+    /** Отметки привычек за день: id привычки → уровень 0–10 и выполненные пункты. */
+    fun marks(date: LocalDate): Map<String, HabitMark> = read("habits_$date") { raw ->
+        val o = JSONObject(raw)
+        o.keys().asSequence().associateWith { id ->
+            val m = o.getJSONObject(id)
+            HabitMark(m.optInt("level"), ints(m.optJSONArray("steps")).toSet())
+        }
+    } ?: emptyMap()
+
+    fun saveMarks(date: LocalDate, marks: Map<String, HabitMark>) = write("habits_$date", JSONObject().apply {
+        marks.forEach { (id, m) -> put(id, JSONObject().put("level", m.level).put("steps", JSONArray(m.steps.sorted()))) }
+    })
+
+    fun books(month: YearMonth): Int = prefs.getInt("books_$month", 0)
+
+    fun saveBooks(month: YearMonth, n: Int) = prefs.edit().putInt("books_$month", n).apply()
+
+    private fun ints(arr: JSONArray?) = if (arr == null) emptyList() else (0 until arr.length()).map { arr.getInt(it) }
+
+    private fun strings(arr: JSONArray?) = if (arr == null) emptyList() else (0 until arr.length()).map { arr.getString(it) }
+
     private fun <T> read(key: String, parse: (String) -> T): T? {
         val raw = prefs.getString(key, null) ?: return null
         return try {
@@ -171,6 +209,7 @@ class Store(context: Context) {
         const val CATEGORIES = "categories"
         const val PROFILE = "profile"
         const val START_BALANCE = "start_balance"
+        const val HABITS = "habits"
         val DAY_KEY = Regex("day_\\d{4}-\\d{2}-\\d{2}")
     }
 }

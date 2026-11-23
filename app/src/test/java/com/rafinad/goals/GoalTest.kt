@@ -67,6 +67,28 @@ class GoalTest {
         assertEquals("1,2м", compact(1_250_000))
     }
 
+    @Test fun habitPlannedOnItsDaysOnly() {
+        val sport = DEFAULT_HABITS.first { it.id == "sport" }
+        val monday = java.time.LocalDate.of(2026, 11, 23)
+        assertEquals(true, sport.plannedOn(monday))
+        assertEquals(false, sport.plannedOn(monday.plusDays(1)))   // вт
+        assertEquals(true, sport.plannedOn(monday.plusDays(3)))    // чт
+        assertEquals(true, Habit("x", "x", "").plannedOn(monday.plusDays(5))) // каждый день
+    }
+
+    @Test fun levelFromStepsRoundsUp() {
+        assertEquals(0, levelFromSteps(0, 9))
+        assertEquals(2, levelFromSteps(1, 9))
+        assertEquals(5, levelFromSteps(1, 2))
+        assertEquals(10, levelFromSteps(9, 9))
+        assertEquals(0, levelFromSteps(0, 0))
+    }
+
+    @Test fun averageLevelOfNothingIsNull() {
+        assertEquals(null, averageLevel(emptyList()))
+        assertEquals(5f, averageLevel(listOf(4, 6)))
+    }
+
     @Test fun listHelpers() {
         assertEquals(listOf(1, 9, 3), listOf(1, 2, 3).replace(1, 9))
         assertEquals(listOf(1, 3), listOf(1, 2, 3).without(1))

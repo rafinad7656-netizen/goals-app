@@ -21,7 +21,10 @@ import java.time.format.DateTimeFormatter
 private val DAY_FORMAT = DateTimeFormatter.ofPattern("d MMMM, EEEE", RU)
 
 @Composable
-fun DayScreen(store: Store, date: LocalDate, tip: Quote, onNextTip: () -> Unit, onProfile: () -> Unit, onToday: () -> Unit) {
+fun DayScreen(
+    store: Store, date: LocalDate, tip: Quote, onNextTip: () -> Unit,
+    onProfile: () -> Unit, onHabits: () -> Unit, onToday: () -> Unit,
+) {
     var day by remember(date) { mutableStateOf(store.day(date)) }
     fun update(d: Day) { day = d; store.saveDay(date, d) }
     val isToday = date == LocalDate.now()
@@ -43,6 +46,8 @@ fun DayScreen(store: Store, date: LocalDate, tip: Quote, onNextTip: () -> Unit, 
         if (isToday) nudgeKind(LocalTime.now().hour)?.let { NudgeBlock(it, day.goal) }
 
         QuoteCard(tip, onNextTip)
+
+        if (isToday) HabitsSummary(store, onHabits)
 
         Section("Главная цель дня") {
             PlainField(day.goal, { update(day.copy(goal = it)) }, "Одна вещь, которая сделает день удачным")
